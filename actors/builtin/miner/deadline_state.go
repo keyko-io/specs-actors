@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -10,6 +11,8 @@ import (
 
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 // A bitfield of sector numbers due at each deadline.
@@ -117,6 +120,57 @@ func ConstructDeadline(emptyArrayCid cid.Cid) *Deadline {
 
 func (d *Deadline) PartitionsArray(store adt.Store) (*adt.Array, error) {
 	return adt.AsArray(store, d.Partitions)
+}
+
+func (d *Deadline) PendingPartitionsArray(store adt.Store) (*adt.Array, error) {
+	return adt.AsArray(store, d.PendingPartitions)
+}
+
+// ActivatePendingPartitions merges pending partitions into the deadline.
+func (d *Deadline) ActivatatePendingPartitions(store adt.Store) error {
+	pendingPartitions, err := d.PendingPartitionsArray(store)
+	if err != nil {
+		return err
+	}
+
+	partitions, err := d.PartitionsArray(store)
+	if err != nil {
+		return err
+	}
+	var newPartLazy, oldPartLazy cbg.Deferred
+	err = pendingPartitions.ForEach(&newPartLazy, func(i int64) error {
+		// TODO: Only allow merging the _first_ partition?
+		found, err := partitions.Get(uint64(i), &oldPartLazy)
+		if err != nil {
+			return err
+		}
+		if !found {
+			partitions.Set(uint64(i), &newPartLazy)
+		}
+		var oldPart, newPart Partition
+		err = oldPart.UnmarshalCBOR(bytes.NewReader(oldPartLazy.Raw))
+		if err != nil {
+			return err
+		}
+		err = newPart.UnmarshalCBOR(bytes.NewReader(newPartLazy.Raw))
+		if err != nil {
+			return err
+		}
+		oldPart.Merge(store, &newPart)
+		return partitions.Set(uint64(i), &oldPart)
+	})
+	if err != nil {
+		return err
+	}
+	d.PendingPartitions, err = adt.MakeEmptyArray(store).Root()
+	if err != nil {
+		return err
+	}
+	d.Partitions, err = partitions.Root()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (dl *Deadline) PopExpiredPartitions(store adt.Store, until abi.ChainEpoch) (*bitfield.BitField, error) {
