@@ -28,7 +28,10 @@ var _ abi.Invokee = Actor{}
 func (a Actor) Constructor(rt vmr.Runtime, currRealizedPower *abi.StoragePower) *adt.EmptyValue {
 	rt.ValidateImmediateCallerIs(builtin.SystemActorAddr)
 
-	st := ConstructState(currRealizedPower)
+	if currRealizedPower == nil {
+		rt.Abortf(exitcode.ErrIllegalArgument, "arugment should not be nil")
+	}
+	st := ConstructState(*currRealizedPower)
 	rt.State().Create(st)
 	return nil
 }
@@ -65,7 +68,8 @@ func (a Actor) AwardBlockReward(rt vmr.Runtime, params *AwardBlockRewardParams) 
 	penalty := abi.NewTokenAmount(0)
 	var st State
 	rt.State().Readonly(&st)
-	blockReward := big.Div(st.ThisEpochReward, big.NewInt(builtin.ExpectedLeadersPerEpoch))
+
+	blockReward := st.ThisEpochReward
 	blockReward = big.Mul(blockReward, big.NewInt(params.WinCount))
 	totalReward := big.Add(blockReward, params.GasReward)
 
@@ -102,12 +106,18 @@ func (a Actor) ThisEpochReward(rt vmr.Runtime, _ *adt.EmptyValue) *abi.TokenAmou
 // This is not necessarily what we want, and may change.
 func (a Actor) UpdateNetworkKPI(rt vmr.Runtime, currRealizedPower *abi.StoragePower) *adt.EmptyValue {
 	rt.ValidateImmediateCallerIs(builtin.StoragePowerActorAddr)
+	if currRealizedPower == nil {
+		rt.Abortf(exitcode.ErrIllegalArgument, "arugment should not be nil")
+	}
 
 	var st State
 	rt.State().Transaction(&st, func() interface{} {
-		// By the time this is called, the rewards for this epoch have been paid to miners.
-		st.RewardEpochsPaid++
-		st.updateToNextEpochReward(currRealizedPower)
+		for st.Epoch+1 < rt.CurrEpoch() {
+			// Update to next epoch to process null rounds
+			st.updateToNextEpoch(*currRealizedPower)
+		}
+
+		st.updateToNextEpochWithReward(*currRealizedPower)
 		return nil
 	})
 	return nil
