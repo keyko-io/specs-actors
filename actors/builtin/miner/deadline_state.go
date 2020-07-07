@@ -33,9 +33,6 @@ type Deadline struct {
 	// re-numbered when activated.
 	PendingPartitions cid.Cid // AMT[PartitionNumber]Partition
 
-	// Partitions numbers with PoSt submissions since the proving period started.
-	PostSubmissions *abi.BitField
-
 	// Number active sectors in the deadline. This number does not include
 	// terminated or pending sectors.
 	ActiveSectors uint64
@@ -45,6 +42,13 @@ type Deadline struct {
 
 	// Maps epochs to partitions with sectors that expire in that epoch.
 	ExpirationsEpochs cid.Cid // AMT[ChainEpoch]BitField
+
+	// Partitions numbers with PoSt submissions since the proving period started.
+	PostSubmissions *abi.BitField
+
+	LiveSectors uint64
+
+	TotalSectors uint64
 }
 
 //
