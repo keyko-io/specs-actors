@@ -6,7 +6,7 @@ import (
 	builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 )
 
-func BaselinePowerAt(epoch abi.ChainEpoch) abi.StoragePower {
+var BaselinePowerAt = func(epoch abi.ChainEpoch) abi.StoragePower {
 	return big.NewInt(1 << 40)
 }
 
@@ -33,7 +33,9 @@ var BaselineTotal = big.Mul(big.NewInt(900e6), big.NewInt(1e18)) // 900M for tes
 
 var (
 	// parameters in Q.128 format
-	lambda, _       = big.FromString("186857370934482378542986172834581")
+	// lambda = tropicalYearInSeconds/blockDelay*ln(2)
+	lambda, _ = big.FromString("186857370934482378542986172834581")
+	// expLamSubOne = e^lambda - 1
 	expLamSubOne, _ = big.FromString("186857422238468211692840431007040")
 )
 
