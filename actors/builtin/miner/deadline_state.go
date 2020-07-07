@@ -97,25 +97,6 @@ func (d *Deadlines) UpdateDeadline(store adt.Store, dlIdx uint64, deadline *Dead
 	return nil
 }
 
-// Adds sector numbers to a deadline.
-// The sector numbers are given as uint64 to avoid pointless conversions for bitfield use.
-func (d *Deadlines) AddToDeadline(deadline uint64, newSectors ...uint64) (err error) {
-	ns := bitfield.NewFromSet(newSectors)
-	d.Due[deadline], err = bitfield.MergeBitFields(d.Due[deadline], ns)
-	return err
-}
-
-// Removes sector numbers from all deadlines.
-func (d *Deadlines) RemoveFromAllDeadlines(sectorNos *abi.BitField) (err error) {
-	for i := range d.Due {
-		d.Due[i], err = bitfield.SubtractBitField(d.Due[i], sectorNos)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 //
 // Deadline (singular)
 //
@@ -142,18 +123,19 @@ func (dl *Deadline) PopExpiredPartitions(store adt.Store, until abi.ChainEpoch) 
 		return nil, err
 	}
 
-	partitionsWithExpiredSectors := bitfield.NewBitField()
+	partitionsWithExpiredSectors := abi.NewBitField()
 	var expiredEpochs []uint64
 	var bf bitfield.BitField
 	err = partitionExpirationQ.ForEach(&bf, func(i int64) error {
-		if i > until {
+		if abi.ChainEpoch(i) > until {
 			return stopErr
 		}
 		expiredEpochs = append(expiredEpochs, uint64(i))
-		partitionsWithExpiredSectors, err = bitfield.MergeBitFields(partitionsWithExpiredSectors, bf)
+		partitionsWithExpiredSectors, err = bitfield.MergeBitFields(partitionsWithExpiredSectors, &bf)
 		if err != nil {
 			return err
 		}
+		return nil
 	})
 	switch err {
 	case nil, stopErr:
@@ -162,7 +144,7 @@ func (dl *Deadline) PopExpiredPartitions(store adt.Store, until abi.ChainEpoch) 
 	}
 
 	err = partitionExpirationQ.BatchDelete(expiredEpochs)
-	if err = nil {
+	if err == nil {
 		return nil, err
 	}
 
