@@ -38,6 +38,9 @@ var BaselineTotal = big.Mul(big.NewInt(900e6), big.NewInt(1e18)) // 900M for tes
 var (
 	// parameters in Q.128 format
 	// lambda = tropicalYearInSeconds/blockDelay*ln(2)
+	// Precise calculation:
+	// lambda = ln(2) / (365.24219 * 24 * 60 * 60 / blockDelay(25))
+	// for Q.128: lambdaQ128 = floor(lambda * 2^128)
 	lambda, _ = big.FromString("186857370934482378542986172834581")
 	// expLamSubOne = e^lambda - 1
 	expLamSubOne, _ = big.FromString("186857422238468211692840431007040")
