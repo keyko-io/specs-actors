@@ -13,24 +13,28 @@ type State struct {
 	CumsumBaseline Spacetime
 	CumsumRealized Spacetime
 
-	// EffectiveNetworkTime is ceiling of EffectiveNetworkTime based on CumsumRealized
+	// EffectiveNetworkTime is ceiling of real effective network time `theta` based on
+	// CumsumBaselinePower(theta) == CumsumRealizedPower
 	EffectiveNetworkTime abi.ChainEpoch
 
 	// The reward to be paid in per WinCount to block producers.
 	// The actual reward total paid out depends on the number of winners in any round.
 	ThisEpochReward abi.TokenAmount
-	Epoch           abi.ChainEpoch
+
+	// Epoch tracks in which epoch the Reward was computed, the reward is valid for Epoch+1
+	Epoch abi.ChainEpoch
 }
 
 func ConstructState(currRealizedPower abi.StoragePower) *State {
 	st := &State{
-		CumsumBaseline: big.Zero(),
-		CumsumRealized: big.Zero(),
+		CumsumBaseline:       big.Zero(),
+		CumsumRealized:       big.Zero(),
+		EffectiveNetworkTime: 0,
 
 		ThisEpochReward: big.Zero(),
+		Epoch:           -1,
 	}
 
-	st.Epoch = -1 // updateToNextEpoch increments it before using it
 	st.updateToNextEpochWithReward(currRealizedPower)
 
 	return st
