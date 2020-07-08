@@ -3,14 +3,18 @@ package reward
 import (
 	abi "github.com/filecoin-project/specs-actors/actors/abi"
 	big "github.com/filecoin-project/specs-actors/actors/abi/big"
-	builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 )
 
 var BaselinePowerAt = func(epoch abi.ChainEpoch) abi.StoragePower {
 	return big.NewInt(1 << 40)
 }
 
-// Computes RewardTheta, result is in Q.128 format
+// Computes RewardTheta which is is precise fractional value of effectiveNetworkTime.
+// The effectiveNetworkTime is defined by CumsumBaselinePower(theta) == CumsumRealizedPower
+// As baseline power is defined over integers and the RewardTheta is required to be fractional,
+// we perform linear interpolation between CumsumBaseline(⌊theta⌋) and CumsumBaseline(⌈theta⌉).
+// The effectiveNetworkTime argument is ceiling of theta.
+// The result is a fractional effectiveNetworkTime (theta) in Q.128 format.
 func computeRTheta(effectiveNetworkTime abi.ChainEpoch, cumsumRealized, cumsumBaseline big.Int) big.Int {
 	var rewardTheta big.Int
 	if effectiveNetworkTime != 0 {
@@ -39,7 +43,7 @@ var (
 	expLamSubOne, _ = big.FromString("186857422238468211692840431007040")
 )
 
-// Computest Reward per WinCount when effective network time changes from prevTheta to currTheta
+// Computes a reward for all Expected Leaders when effective network time changes from prevTheta to currTheta
 // Inputs are in Q.128 format
 func computeReward(epoch abi.ChainEpoch, prevTheta, currTheta big.Int) abi.TokenAmount {
 	simpleReward := big.Mul(SimpleTotal, expLamSubOne)    //Q.0 * Q.128 =>  Q.128
@@ -50,8 +54,7 @@ func computeReward(epoch abi.ChainEpoch, prevTheta, currTheta big.Int) abi.Token
 
 	baselineReward := big.Sub(computeBaselineSupply(prevTheta), computeBaselineSupply(currTheta)) // Q.128
 
-	reward := big.Add(simpleReward, baselineReward)                       // Q.128
-	reward = big.Div(reward, big.NewInt(builtin.ExpectedLeadersPerEpoch)) // Q.128 / Q.0  => Q.128
+	reward := big.Add(simpleReward, baselineReward) // Q.128
 
 	return big.Rsh(reward, precision) // Q.128 => Q.0
 }

@@ -69,8 +69,9 @@ func (a Actor) AwardBlockReward(rt vmr.Runtime, params *AwardBlockRewardParams) 
 	var st State
 	rt.State().Readonly(&st)
 
-	blockReward := st.ThisEpochReward
-	blockReward = big.Mul(blockReward, big.NewInt(params.WinCount))
+	blockReward := big.Mul(st.ThisEpochReward, big.NewInt(params.WinCount))
+	blockReward = big.Div(blockReward, big.NewInt(builtin.ExpectedLeadersPerEpoch))
+
 	totalReward := big.Add(blockReward, params.GasReward)
 
 	// Cap the penalty at the total reward value.
