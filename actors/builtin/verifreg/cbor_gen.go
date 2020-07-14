@@ -12,18 +12,14 @@ import (
 
 var _ = xerrors.Errorf
 
-var lengthBufState = []byte{131}
-
 func (t *State) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if _, err := w.Write(lengthBufState); err != nil {
+	if _, err := w.Write([]byte{131}); err != nil {
 		return err
 	}
-
-	scratch := make([]byte, 9)
 
 	// t.RootKey (address.Address) (struct)
 	if err := t.RootKey.MarshalCBOR(w); err != nil {
@@ -32,13 +28,13 @@ func (t *State) MarshalCBOR(w io.Writer) error {
 
 	// t.Verifiers (cid.Cid) (struct)
 
-	if err := cbg.WriteCidBuf(scratch, w, t.Verifiers); err != nil {
+	if err := cbg.WriteCid(w, t.Verifiers); err != nil {
 		return xerrors.Errorf("failed to write cid field t.Verifiers: %w", err)
 	}
 
 	// t.VerifiedClients (cid.Cid) (struct)
 
-	if err := cbg.WriteCidBuf(scratch, w, t.VerifiedClients); err != nil {
+	if err := cbg.WriteCid(w, t.VerifiedClients); err != nil {
 		return xerrors.Errorf("failed to write cid field t.VerifiedClients: %w", err)
 	}
 
@@ -46,12 +42,9 @@ func (t *State) MarshalCBOR(w io.Writer) error {
 }
 
 func (t *State) UnmarshalCBOR(r io.Reader) error {
-	*t = State{}
-
 	br := cbg.GetPeeker(r)
-	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
@@ -99,14 +92,12 @@ func (t *State) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
-var lengthBufAddVerifierParams = []byte{130}
-
 func (t *AddVerifierParams) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if _, err := w.Write(lengthBufAddVerifierParams); err != nil {
+	if _, err := w.Write([]byte{130}); err != nil {
 		return err
 	}
 
@@ -123,12 +114,9 @@ func (t *AddVerifierParams) MarshalCBOR(w io.Writer) error {
 }
 
 func (t *AddVerifierParams) UnmarshalCBOR(r io.Reader) error {
-	*t = AddVerifierParams{}
-
 	br := cbg.GetPeeker(r)
-	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
@@ -161,14 +149,12 @@ func (t *AddVerifierParams) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
-var lengthBufAddVerifiedClientParams = []byte{130}
-
 func (t *AddVerifiedClientParams) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if _, err := w.Write(lengthBufAddVerifiedClientParams); err != nil {
+	if _, err := w.Write([]byte{130}); err != nil {
 		return err
 	}
 
@@ -185,12 +171,9 @@ func (t *AddVerifiedClientParams) MarshalCBOR(w io.Writer) error {
 }
 
 func (t *AddVerifiedClientParams) UnmarshalCBOR(r io.Reader) error {
-	*t = AddVerifiedClientParams{}
-
 	br := cbg.GetPeeker(r)
-	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
@@ -223,14 +206,12 @@ func (t *AddVerifiedClientParams) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
-var lengthBufUseBytesParams = []byte{130}
-
 func (t *UseBytesParams) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if _, err := w.Write(lengthBufUseBytesParams); err != nil {
+	if _, err := w.Write([]byte{130}); err != nil {
 		return err
 	}
 
@@ -247,12 +228,9 @@ func (t *UseBytesParams) MarshalCBOR(w io.Writer) error {
 }
 
 func (t *UseBytesParams) UnmarshalCBOR(r io.Reader) error {
-	*t = UseBytesParams{}
-
 	br := cbg.GetPeeker(r)
-	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
@@ -285,14 +263,12 @@ func (t *UseBytesParams) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
-var lengthBufRestoreBytesParams = []byte{130}
-
 func (t *RestoreBytesParams) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if _, err := w.Write(lengthBufRestoreBytesParams); err != nil {
+	if _, err := w.Write([]byte{130}); err != nil {
 		return err
 	}
 
@@ -309,12 +285,9 @@ func (t *RestoreBytesParams) MarshalCBOR(w io.Writer) error {
 }
 
 func (t *RestoreBytesParams) UnmarshalCBOR(r io.Reader) error {
-	*t = RestoreBytesParams{}
-
 	br := cbg.GetPeeker(r)
-	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}

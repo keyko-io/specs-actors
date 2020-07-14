@@ -44,6 +44,10 @@ jobs:
       - install-deps
       - prepare
       - go/mod-download
+      - run: sudo apt-get update
+      - restore_cache:
+          name: restore go mod cache
+          key: v1-go-deps-{{ arch }}-{{ checksum "/home/circleci/project/go.mod" }}
       - run:
           command: make build
       - store_artifacts:
@@ -57,6 +61,10 @@ jobs:
       - install-deps
       - prepare
       - go/mod-download
+      - run: sudo apt-get update
+      - restore_cache:
+          name: restore go mod cache
+          key: v1-go-deps-{{ arch }}-{{ checksum "/home/circleci/project/go.mod" }}
       - run:
           command: |
             make test-coverage
@@ -76,7 +84,7 @@ jobs:
         default: golang
       golangci-lint-version:
         type: string
-        default: 1.28.2
+        default: 1.23.1
       concurrency:
         type: string
         default: '2'
@@ -93,11 +101,14 @@ jobs:
       - install-deps
       - prepare
       - run:
-          command: make -j3 support/tools/bin/golangci-lint support/tools/bin/no-map-range.so
+          command: make build
+      - go/install-golangci-lint:
+          gobin: $HOME/.local/bin
+          version: << parameters.golangci-lint-version >>
       - run:
           name: Lint
           command: |
-            support/tools/bin/golangci-lint run -v \
+            $HOME/.local/bin/golangci-lint run -v --skip-dirs-use-default=false\
               --concurrency << parameters.concurrency >> << parameters.args >>
 
   lint-all:

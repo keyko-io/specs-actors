@@ -26,9 +26,8 @@ func groupSectorsByExpiration(sectors []*SectorOnChainInfo) []sectorEpochSet {
 	sectorEpochSets := make([]sectorEpochSet, 0, len(sectorsByExpiration))
 
 	// This map iteration is non-deterministic but safe because we sort by epoch below.
-	for expiration, sectors := range sectorsByExpiration { //nolint:nomaprange // this is copy and sort
-		sectorEpochSets = append(sectorEpochSets,
-			sectorEpochSet{epoch: expiration, sectors: sectors})
+	for expiration, sectors := range sectorsByExpiration {
+		sectorEpochSets = append(sectorEpochSets, sectorEpochSet{expiration, sectors})
 	}
 
 	sort.Slice(sectorEpochSets, func(i, j int) bool {

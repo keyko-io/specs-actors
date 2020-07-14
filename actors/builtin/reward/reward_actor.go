@@ -28,11 +28,7 @@ var _ abi.Invokee = Actor{}
 func (a Actor) Constructor(rt vmr.Runtime, currRealizedPower *abi.StoragePower) *adt.EmptyValue {
 	rt.ValidateImmediateCallerIs(builtin.SystemActorAddr)
 
-	if currRealizedPower == nil {
-		rt.Abortf(exitcode.ErrIllegalArgument, "arugment should not be nil")
-		return nil // linter does not understand abort exiting
-	}
-	st := ConstructState(*currRealizedPower)
+	st := ConstructState(currRealizedPower)
 	rt.State().Create(st)
 	return nil
 }
@@ -69,10 +65,8 @@ func (a Actor) AwardBlockReward(rt vmr.Runtime, params *AwardBlockRewardParams) 
 	penalty := abi.NewTokenAmount(0)
 	var st State
 	rt.State().Readonly(&st)
-
-	blockReward := big.Mul(st.ThisEpochReward, big.NewInt(params.WinCount))
-	blockReward = big.Div(blockReward, big.NewInt(builtin.ExpectedLeadersPerEpoch))
-
+	blockReward := big.Div(st.ThisEpochReward, big.NewInt(builtin.ExpectedLeadersPerEpoch))
+	blockReward = big.Mul(blockReward, big.NewInt(params.WinCount))
 	totalReward := big.Add(blockReward, params.GasReward)
 
 	// Cap the penalty at the total reward value.
@@ -108,20 +102,12 @@ func (a Actor) ThisEpochReward(rt vmr.Runtime, _ *adt.EmptyValue) *abi.TokenAmou
 // This is not necessarily what we want, and may change.
 func (a Actor) UpdateNetworkKPI(rt vmr.Runtime, currRealizedPower *abi.StoragePower) *adt.EmptyValue {
 	rt.ValidateImmediateCallerIs(builtin.StoragePowerActorAddr)
-	if currRealizedPower == nil {
-		rt.Abortf(exitcode.ErrIllegalArgument, "arugment should not be nil")
-	}
 
 	var st State
 	rt.State().Transaction(&st, func() interface{} {
-		// if there were null runs catch up the computation until
-		// st.Epoch == rt.CurrEpoch()
-		for st.Epoch < rt.CurrEpoch() {
-			// Update to next epoch to process null rounds
-			st.updateToNextEpoch(*currRealizedPower)
-		}
-
-		st.updateToNextEpochWithReward(*currRealizedPower)
+		// By the time this is called, the rewards for this epoch have been paid to miners.
+		st.RewardEpochsPaid++
+		st.updateToNextEpochReward(currRealizedPower)
 		return nil
 	})
 	return nil

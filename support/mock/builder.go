@@ -56,7 +56,7 @@ func (b *RuntimeBuilder) Build(t testing.TB) *Runtime {
 
 	// Deep copy the mutable values.
 	cpy.store = make(map[cid.Cid][]byte)
-	for k, v := range b.rt.store { //nolint:nomaprange
+	for k, v := range b.rt.store {
 		cpy.store[k] = v
 	}
 
